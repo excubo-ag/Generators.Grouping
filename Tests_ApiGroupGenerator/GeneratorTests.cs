@@ -130,6 +130,93 @@ namespace USER
         }
 
         [Fact]
+        public void GenericContainer()
+        {
+            var userSource = @"
+using Excubo.Generators.Grouping;
+using System;
+
+namespace USER
+{
+    public partial class Container<T>
+    {
+        public partial struct _Group
+        {
+        }
+        [Group(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(_Group))] public (T, T1) Bar<T1>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+    }
+}
+";
+            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            generatorDiagnostics.Verify();
+            Assert.Equal(4, generated.Length);
+            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
+            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group.cs"));
+            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Foo.cs"));
+            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Bar.cs"));
+            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+#nullable enable
+using System;
+namespace Excubo.Generators.Grouping
+{
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+    sealed class GroupAttribute : Attribute
+    {
+        public GroupAttribute(Type group_type, string? method_name = null)
+        {
+            GroupType = group_type;
+            MethodName = method_name;
+        }
+        public Type GroupType { get; set; }
+        public string? MethodName { get; set; }
+    }
+}
+#nullable restore
+");
+            generated.First(g => g.Filename.EndsWith("group__Group.cs")).Content.Should().BeIgnoringLineEndings(@"
+namespace USER
+{
+    public partial class Container<T>
+    {
+        public partial struct _Group
+        {
+            private Container<T> group_internal__parent;
+            public _Group(Container<T> parent) { this.group_internal__parent = parent; }
+        }
+        public _Group Group => new _Group(this);
+    }
+}
+");
+            generated.First(g => g.Filename.EndsWith("group__Group_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+namespace USER
+{
+    public partial class Container<T>
+    {
+        public partial struct _Group
+        {
+            public void Foo()
+                => group_internal__parent.Foo();
+        }
+    }
+}
+");
+            generated.First(g => g.Filename.EndsWith("group__Group_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+namespace USER
+{
+    public partial class Container<T>
+    {
+        public partial struct _Group
+        {
+            public (T, T1) Bar<T1>(T1 t1, string tmp) where T1 : class
+                => group_internal__parent.Bar<T1>(t1, tmp);
+        }
+    }
+}
+");
+        }
+
+        [Fact]
         public void SimpleGroupAttribute()
         {
             var userSource = @"

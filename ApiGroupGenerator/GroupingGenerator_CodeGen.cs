@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Excubo.Generators.Grouping
@@ -70,12 +71,17 @@ public partial struct {method.Group.Name}
         /// <returns></returns>
         private static string ProcessGroupStruct(INamedTypeSymbol structSymbol)
         {
-            var outer_name = structSymbol.ContainingSymbol.Name;
+            var outer = structSymbol.ContainingSymbol as INamedTypeSymbol;
+            Debug.Assert(outer != null);
+            var outer_name = outer.Name;
+            var outer_type_parameters = string.Join(", ", outer.TypeArguments.Select(t => t.Name));
+            outer_type_parameters = string.IsNullOrEmpty(outer_type_parameters) ? outer_type_parameters : "<" + outer_type_parameters + ">";
+            var outer_full_name = outer_name + outer_type_parameters;
             var inner_code = $@"
 public partial struct {structSymbol.Name}
 {{
-    private {outer_name} group_internal__parent;
-    public {structSymbol.Name}({outer_name} parent) {{ this.group_internal__parent = parent; }}
+    private {outer_full_name} group_internal__parent;
+    public {structSymbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}
 }}
 public {structSymbol.Name} {structSymbol.Name.Substring(1)} => new {structSymbol.Name}(this);
 ";
@@ -88,8 +94,10 @@ public {structSymbol.Name} {structSymbol.Name.Substring(1)} => new {structSymbol
             {
                 var accessibility = containing_type.DeclaredAccessibility.ToString().ToLowerInvariant();
                 var type_kind = containing_type.TypeKind == TypeKind.Struct ? "struct" : "class";
+                var type_parameters = string.Join(", ", containing_type.TypeArguments.Select(t => t.Name));
+                type_parameters = string.IsNullOrEmpty(type_parameters) ? type_parameters : "<" + type_parameters + ">";
                 inner_code = $@"
-{accessibility} partial {type_kind} {containing_type.Name}
+{accessibility} partial {type_kind} {containing_type.Name}{type_parameters}
 {{
 {inner_code.Indented()}}}
 ";
