@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="package.csproj" Condition="Exists('package.csproj')" />
+	<Import Project="package.csproj" Condition="Exists('package.csproj')" />
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>preview</LangVersion>
