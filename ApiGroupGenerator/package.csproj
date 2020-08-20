@@ -2,10 +2,6 @@
   <PropertyGroup>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-  <!--Important: this is only a dev dependency, it won't be recursive-->
-  <PropertyGroup>
-    <DevelopmentDependency>true</DevelopmentDependency>
-  </PropertyGroup>
   <!--Title, Description, Tags, Product, Product-->
   <PropertyGroup>
     <Title>API Grouping</Title>
@@ -27,7 +23,7 @@
   <!--PackageId, Version-->
   <PropertyGroup>
     <PackageId>Excubo.Generators.Grouping</PackageId>
-    <Version>0.9.1</Version>
+    <Version>0.9.4</Version>
   </PropertyGroup>
   <!--Self Include-->
   <ItemGroup>
