@@ -3,7 +3,7 @@
 
 Some APIs have a lot of methods.
 When they all reside in the same object, finding the right API call can be a challenge to the users.
-But changing the structure of the API from a monolithic API to an API with intuitively named and smaller groups would break existing users.
+But replacing the structure of the API from a monolithic API to an API with intuitively named and smaller groups would break existing code.
 The solution is to offer both, without having to write the grouping yourself.
 
 ## Example
