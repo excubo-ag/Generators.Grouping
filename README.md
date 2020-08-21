@@ -1,10 +1,36 @@
 
 # Excubo.Generators.Grouping
 
+[![Nuget](https://img.shields.io/nuget/v/Excubo.Generators.Grouping)](https://www.nuget.org/packages/Excubo.Generators.Grouping/)
+[![Nuget](https://img.shields.io/nuget/dt/Excubo.Generators.Grouping)](https://www.nuget.org/packages/Excubo.Generators.Grouping/)
+[![GitHub](https://img.shields.io/github/license/excubo-ag/Generators.Grouping)](https://github.com/excubo-ag/Generators.Grouping)
+
 Some APIs have a lot of methods.
 When they all reside in the same object, finding the right API call can be a challenge to the users.
 But replacing the structure of the API from a monolithic API to an API with intuitively named and smaller groups would break existing code.
 The solution is to offer both, without having to write the grouping yourself.
+
+## How to use
+
+### 1. Install the nuget package Excubo.Generators.Grouping
+
+Excubo.Generators.Grouping is distributed [via nuget.org](https://www.nuget.org/packages/Excubo.Generators.Grouping/).
+[![Nuget](https://img.shields.io/nuget/v/Excubo.Generators.Grouping)](https://www.nuget.org/packages/Excubo.Generators.Grouping/)
+
+#### Package Manager:
+```ps
+Install-Package Excubo.Generators.Grouping -Version 1.0.0
+```
+
+#### .NET Cli:
+```cmd
+dotnet add package Excubo.Generators.Grouping --version 1.0.0
+```
+
+#### Package Reference
+```xml
+<PackageReference Include="Excubo.Generators.Grouping" Version="1.0.0" />
+```
 
 ## Example
 
