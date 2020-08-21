@@ -90,7 +90,7 @@ namespace Excubo.Generators.Grouping
             var field_and_constructor = $@"
 private {outer_full_name} group_internal__parent;
 public {group_symbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}";
-            var property = group_symbol.TypeKind == TypeKind.Interface 
+            var property = group_symbol.TypeKind == TypeKind.Interface
                 ? $@"
 {comments_on_group} {group_symbol.Name} {group_symbol.Name.Substring(2)} {{ get; }}"
                 : $@"
