@@ -1,12 +1,13 @@
-﻿using System.Linq;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Excubo.Generators.Grouping
 {
     internal static class StringExtension
     {
-        public static string Indented(this string code, string indentation = "    ")
+        public static string NormalizeWhitespace(this string code)
         {
-            return string.Join("", code.Split('\n').Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => indentation + c + "\n"));
+            return CSharpSyntaxTree.ParseText(code).GetRoot().NormalizeWhitespace().ToFullString();
         }
     }
 }

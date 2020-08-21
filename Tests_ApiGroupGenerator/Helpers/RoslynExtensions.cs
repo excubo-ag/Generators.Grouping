@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace Tests_APIGroupGenerator.Helpers
+namespace Tests_ApiGroupGenerator.Helpers
 {
     public static class RoslynExtensions
     {

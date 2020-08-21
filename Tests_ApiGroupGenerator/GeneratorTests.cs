@@ -1,11 +1,11 @@
 ﻿using Excubo.Generators.Grouping;
 using FluentAssertions;
 using System.Linq;
-using Tests_APIGroupGenerator.Helpers;
+using Tests_ApiGroupGenerator.Helpers;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Tests_APIGroupGenerator
+namespace Tests_ApiGroupGenerator
 {
     public class GeneratorTests : TestBase<GroupingGenerator>
     {
@@ -789,6 +789,118 @@ namespace USER
                 private Container group_internal__parent;
                 public _Inner(Container parent) { this.group_internal__parent = parent; }
             }
+            public _Inner Inner => new _Inner(this.group_internal__parent);
+        }
+    }
+}
+");
+            generated.First(g => g.Filename.EndsWith("group__Inner_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+namespace USER
+{
+    public partial class Container
+    {
+        public partial struct _Outer
+        {
+            public partial struct _Inner
+            {
+                public void Foo()
+                    => group_internal__parent.Foo();
+            }
+        }
+    }
+}
+");
+        }
+
+        [Fact]
+        public void Comments()
+        {
+            var userSource = @"
+using Excubo.Generators.Grouping;
+using System;
+
+namespace USER
+{
+    public partial class Container
+    {
+        /// <summary>
+        /// Comment on <see cref=""Outer""/>
+        /// </summary>
+        public partial struct _Outer
+        {
+            /// <summary>
+            /// Comment on <see cref=""_Inner""/>
+            /// </summary>
+            // another comment
+            /* seriously: three kinds of comments */
+            public partial struct _Inner
+            {
+            }
+        }
+        [Group(typeof(_Outer._Inner))] public void Foo() { throw new NotImplementedException(); }
+    }
+}
+";
+            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            generatorDiagnostics.Verify();
+            Assert.Equal(4, generated.Length);
+            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
+            Assert.Contains(generated, g => g.Filename.EndsWith("group__Outer.cs"));
+            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner.cs"));
+            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner_Foo.cs"));
+            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+#nullable enable
+using System;
+namespace Excubo.Generators.Grouping
+{
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+    sealed class GroupAttribute : Attribute
+    {
+        public GroupAttribute(Type group_type, string? method_name = null)
+        {
+            GroupType = group_type;
+            MethodName = method_name;
+        }
+        public Type GroupType { get; set; }
+        public string? MethodName { get; set; }
+    }
+}
+#nullable restore
+");
+            generated.First(g => g.Filename.EndsWith("group__Outer.cs")).Content.Should().BeIgnoringLineEndings(@"
+namespace USER
+{
+    public partial class Container
+    {
+        public partial struct _Outer
+        {
+            private Container group_internal__parent;
+            public _Outer(Container parent) { this.group_internal__parent = parent; }
+        }
+        /// <summary>
+        /// Comment on <see cref=""Outer""/>
+        /// </summary>
+        public _Outer Outer => new _Outer(this);
+    }
+}
+");
+            generated.First(g => g.Filename.EndsWith("group__Inner.cs")).Content.Should().BeIgnoringLineEndings(@"
+namespace USER
+{
+    public partial class Container
+    {
+        public partial struct _Outer
+        {
+            public partial struct _Inner
+            {
+                private Container group_internal__parent;
+                public _Inner(Container parent) { this.group_internal__parent = parent; }
+            }
+            /// <summary>
+            /// Comment on <see cref=""_Inner""/>
+            /// </summary>
+            // another comment
+            /* seriously: three kinds of comments */
             public _Inner Inner => new _Inner(this.group_internal__parent);
         }
     }

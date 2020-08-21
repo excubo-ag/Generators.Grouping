@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Tests_APIGroupGenerator.Helpers
+namespace Tests_ApiGroupGenerator.Helpers
 {
     public static class Extensions
     {

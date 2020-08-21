@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 
-namespace Tests_APIGroupGenerator.Helpers
+namespace Tests_ApiGroupGenerator.Helpers
 {
     public abstract class TestBase<TGenerator> where TGenerator : ISourceGenerator, new()
     {

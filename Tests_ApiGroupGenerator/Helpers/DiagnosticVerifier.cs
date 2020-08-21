@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
-namespace Tests_APIGroupGenerator.Helpers
+namespace Tests_ApiGroupGenerator.Helpers
 {
     public static class DiagnosticVerifier
     {

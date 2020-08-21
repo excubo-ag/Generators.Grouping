@@ -70,6 +70,8 @@ public partial struct {method.Group.Name}
         /// <returns></returns>
         private static string ProcessGroupStruct(INamedTypeSymbol struct_symbol, INamedTypeSymbol containing_type)
         {
+            // we copy the comment on the struct to the auto-generated property
+            var comments_on_struct = string.Join("", struct_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Select(t => t.ToFullString()));
             /// The containing type is the methods containing type, i.e. the reference we need to hold in order to be able to execute methods.
             /// If that's equal to the containing type of the <param name="struct_symbol"/>,
             ///     then we need to initialize the property with this,
@@ -86,6 +88,7 @@ public partial struct {struct_symbol.Name}
     private {outer_full_name} group_internal__parent;
     public {struct_symbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}
 }}
+{comments_on_struct}
 public {struct_symbol.Name} {struct_symbol.Name.Substring(1)} => new {struct_symbol.Name}({initializer});
 ";
             return WrapInOuterTypesAndNamespace(inner_code, struct_symbol);
@@ -102,14 +105,16 @@ public {struct_symbol.Name} {struct_symbol.Name.Substring(1)} => new {struct_sym
                 inner_code = $@"
 {accessibility} partial {type_kind} {containing_type.Name}{type_parameters}
 {{
-{inner_code.Indented()}}}
+    {inner_code}
+}}
 ";
             }
             var namespaceName = struct_symbol.ContainingNamespace.ToDisplayString();
             return @$"
 namespace {namespaceName}
 {{
-{inner_code.Indented()}}}
+    {inner_code}
+}}
 ";
         }
     }

@@ -1,4 +1,4 @@
-﻿namespace Tests_APIGroupGenerator.Helpers
+﻿namespace Tests_ApiGroupGenerator.Helpers
 {
     internal struct VerifyDiagnosticAnalyzerResult
     {

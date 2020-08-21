@@ -8,7 +8,7 @@ namespace Excubo.Generators.Grouping
     {
         public static void AddCode(this SourceGeneratorContext context, string hint_name, string code)
         {
-            context.AddSource(hint_name, SourceText.From(code.Trim(' ', '\t', '\r', '\n'), Encoding.UTF8));
+            context.AddSource(hint_name, SourceText.From(code.NormalizeWhitespace(), Encoding.UTF8));
         }
     }
 }
