@@ -43,7 +43,7 @@ namespace Excubo.Generators.Grouping
                 ;
             foreach (var (group, containing_type) in groups)
             {
-                context.AddCode($"group_{group.ToDisplayString()}", ProcessGroupStruct(group, containing_type));
+                context.AddCode($"group_{group.ToDisplayString()}", ProcessGroup(group, containing_type));
             }
         }
 

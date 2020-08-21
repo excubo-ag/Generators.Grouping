@@ -28,7 +28,7 @@ namespace Excubo.Generators.Grouping
         /// <summary>
         /// This generates code for a specific method within a group.
         /// We create
-        /// - in the group struct: a method that
+        /// - in the group struct/interface: a method that
         ///   - matches the return type of the method in the parent
         ///   - has either the name of the method in the parent, or the new name provided by the user
         ///   - has the same type parameters as the method in the parent
@@ -36,10 +36,7 @@ namespace Excubo.Generators.Grouping
         ///   - has the same constraints as the method in the parent
         ///   - has a body that calls the method in the parent (with explicit type parameters, as it might be that not all parameters are inferable)
         /// </summary>
-        /// <param name="classSymbol">The class that the group is contained in</param>
-        /// <param name="structSymbol">The struct to hold all group members</param>
-        /// <param name="newName">The optional new name for the method inside the group</param>
-        /// <param name="methodToCopy">The method to mirror in the group struct</param>
+        /// <param name="method">The method to mirror in the group</param>
         /// <returns></returns>
         private string ProcessMethod(GroupedMethod method)
         {
@@ -50,11 +47,13 @@ namespace Excubo.Generators.Grouping
             constraints = string.IsNullOrEmpty(constraints) ? constraints : " " + constraints.Trim(' ');
             var parameters = string.Join(", ", method.Symbol.Parameters.Select(p => p.Type.ToDisplayString() + " " + p.Name));
             var arguments = string.Join(", ", method.Symbol.Parameters.Select(p => p.Name));
+            var type_kind = method.Group.TypeKind switch { TypeKind.Class => "class", TypeKind.Interface => "interface", _ => "struct" };
+            var method_impl = method.Group.TypeKind == TypeKind.Interface ? string.Empty : $"=> group_internal__parent.{method.Symbol.Name}{type_parameters}({arguments})";
             var innerCode = $@"
-public partial struct {method.Group.Name}
+{method.Group.DeclaredAccessibility.ToString().ToLowerInvariant()} partial {type_kind} {method.Group.Name}
 {{
     public {returnType} {method.TargetName}{type_parameters}({parameters}){constraints}
-        => group_internal__parent.{method.Symbol.Name}{type_parameters}({arguments});
+        {method_impl};
 }}";
             return WrapInOuterTypesAndNamespace(innerCode, method.Group);
         }
@@ -62,44 +61,57 @@ public partial struct {method.Group.Name}
         /// <summary>
         /// This generates code for each unique Group.
         /// We create
-        /// - in the group struct: a private field that will hold the reference to the parent object,
-        /// - in the group struct: a constructor that takes a reference to the parent and assigns that to the private field,
-        /// - in the containing class: a property of the group struct type that calls the constructor mentioned above.
+        /// - in the group struct/interface: a private field that will hold the reference to the parent object,
+        /// - in the group struct/interface: a constructor that takes a reference to the parent and assigns that to the private field,
+        /// - in the containing class: a property of the group struct/interface type that calls the constructor mentioned above.
         /// </summary>
-        /// <param name="struct_symbol">The struct to hold all group members</param>
+        /// <param name="group_symbol">The struct/interface to hold all group members</param>
         /// <returns></returns>
-        private static string ProcessGroupStruct(INamedTypeSymbol struct_symbol, INamedTypeSymbol containing_type)
+        private static string ProcessGroup(INamedTypeSymbol group_symbol, INamedTypeSymbol containing_type)
         {
-            // we copy the comment on the struct to the auto-generated property
-            var comments_on_struct = string.Join("", struct_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Select(t => t.ToFullString()));
+            // we copy the comment on the struct/interface to the auto-generated property
+            var comments_on_group = string.Join("", group_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Select(t => t.ToFullString()));
             /// The containing type is the methods containing type, i.e. the reference we need to hold in order to be able to execute methods.
-            /// If that's equal to the containing type of the <param name="struct_symbol"/>,
+            /// If that's equal to the containing type of the <param name="group_symbol"/>,
             ///     then we need to initialize the property with this,
             ///     otherwise with this.group_internal__parent.
-            var group_containing_type_is_containing_type = SymbolEqualityComparer.Default.Equals(struct_symbol.ContainingType, containing_type);
+            var group_containing_type_is_containing_type = SymbolEqualityComparer.Default.Equals(group_symbol.ContainingType, containing_type);
             var initializer = group_containing_type_is_containing_type ? "this" : "this.group_internal__parent";
             var outer_name = containing_type.Name;
             var outer_type_parameters = string.Join(", ", containing_type.TypeArguments.Select(t => t.Name));
             outer_type_parameters = string.IsNullOrEmpty(outer_type_parameters) ? outer_type_parameters : "<" + outer_type_parameters + ">";
             var outer_full_name = outer_name + outer_type_parameters;
+            var type_kind = group_symbol.TypeKind switch { TypeKind.Class => "class", TypeKind.Interface => "interface", _ => "struct" };
+            var interfaces = group_symbol.Interfaces;
+            var parent_interfaces = group_symbol.ContainingType.Interfaces;
+            var interface_to_implement = interfaces.FirstOrDefault(i => parent_interfaces.Any(pi => SymbolEqualityComparer.Default.Equals(i.ContainingType, pi)));
+            var interface_implementation = (interface_to_implement == default ? "" : $@"
+{interface_to_implement.ContainingType.Name}.{interface_to_implement.Name} {interface_to_implement.ContainingType.Name}.{interface_to_implement.Name.Substring(2)} => {group_symbol.Name.Substring(1)};");
+            var field_and_constructor = $@"
+private {outer_full_name} group_internal__parent;
+public {group_symbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}";
+            var property = group_symbol.TypeKind == TypeKind.Interface 
+                ? $@"
+{comments_on_group} {group_symbol.Name} {group_symbol.Name.Substring(2)} {{ get; }}"
+                : $@"
+{comments_on_group} public {group_symbol.Name} {group_symbol.Name.Substring(1)} => new {group_symbol.Name}({initializer});
+{interface_implementation}";
             var inner_code = $@"
-public partial struct {struct_symbol.Name}
+{group_symbol.DeclaredAccessibility.ToString().ToLowerInvariant()} partial {type_kind} {group_symbol.Name}
 {{
-    private {outer_full_name} group_internal__parent;
-    public {struct_symbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}
+    {(group_symbol.TypeKind == TypeKind.Interface ? string.Empty : field_and_constructor)}
 }}
-{comments_on_struct}
-public {struct_symbol.Name} {struct_symbol.Name.Substring(1)} => new {struct_symbol.Name}({initializer});
+{property}
 ";
-            return WrapInOuterTypesAndNamespace(inner_code, struct_symbol);
+            return WrapInOuterTypesAndNamespace(inner_code, group_symbol);
         }
 
-        private static string WrapInOuterTypesAndNamespace(string inner_code, ISymbol struct_symbol)
+        private static string WrapInOuterTypesAndNamespace(string inner_code, ISymbol group_symbol)
         {
-            for (var symbol = struct_symbol; symbol.ContainingSymbol != null && symbol.ContainingSymbol is INamedTypeSymbol containing_type; symbol = symbol.ContainingSymbol)
+            for (var symbol = group_symbol; symbol.ContainingSymbol != null && symbol.ContainingSymbol is INamedTypeSymbol containing_type; symbol = symbol.ContainingSymbol)
             {
                 var accessibility = containing_type.DeclaredAccessibility.ToString().ToLowerInvariant();
-                var type_kind = containing_type.TypeKind == TypeKind.Struct ? "struct" : "class";
+                var type_kind = containing_type.TypeKind switch { TypeKind.Class => "class", TypeKind.Interface => "interface", _ => "struct" };
                 var type_parameters = string.Join(", ", containing_type.TypeArguments.Select(t => t.Name));
                 type_parameters = string.IsNullOrEmpty(type_parameters) ? type_parameters : "<" + type_parameters + ">";
                 inner_code = $@"
@@ -109,7 +121,7 @@ public {struct_symbol.Name} {struct_symbol.Name.Substring(1)} => new {struct_sym
 }}
 ";
             }
-            var namespaceName = struct_symbol.ContainingNamespace.ToDisplayString();
+            var namespaceName = group_symbol.ContainingNamespace.ToDisplayString();
             return @$"
 namespace {namespaceName}
 {{

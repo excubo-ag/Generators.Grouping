@@ -19,17 +19,17 @@ Excubo.Generators.Grouping is distributed [via nuget.org](https://www.nuget.org/
 
 #### Package Manager:
 ```ps
-Install-Package Excubo.Generators.Grouping -Version 1.0.0
+Install-Package Excubo.Generators.Grouping -Version 1.2.0
 ```
 
 #### .NET Cli:
 ```cmd
-dotnet add package Excubo.Generators.Grouping --version 1.0.0
+dotnet add package Excubo.Generators.Grouping --version 1.2.0
 ```
 
 #### Package Reference
 ```xml
-<PackageReference Include="Excubo.Generators.Grouping" Version="1.0.0" />
+<PackageReference Include="Excubo.Generators.Grouping" Version="1.2.0" />
 ```
 
 ## Example
