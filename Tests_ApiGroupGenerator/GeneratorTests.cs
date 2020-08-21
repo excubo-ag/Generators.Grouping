@@ -9,7 +9,7 @@ namespace Tests_APIGroupGenerator
 {
     public class GeneratorTests : TestBase<GroupingGenerator>
     {
-        public GeneratorTests(ITestOutputHelper outputHelper) : base(outputHelper)
+        public GeneratorTests(ITestOutputHelper output_helper) : base(output_helper)
         {
         }
 

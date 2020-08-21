@@ -1,12 +1,11 @@
 ﻿using Microsoft.CodeAnalysis;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Excubo.Generators.Grouping
 {
     public partial class GroupingGenerator
     {
-        private const string attributeText = @"
+        private const string AttributeText = @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -67,34 +66,34 @@ public partial struct {method.Group.Name}
         /// - in the group struct: a constructor that takes a reference to the parent and assigns that to the private field,
         /// - in the containing class: a property of the group struct type that calls the constructor mentioned above.
         /// </summary>
-        /// <param name="structSymbol">The struct to hold all group members</param>
+        /// <param name="struct_symbol">The struct to hold all group members</param>
         /// <returns></returns>
-        private static string ProcessGroupStruct(INamedTypeSymbol structSymbol, INamedTypeSymbol containing_type)
+        private static string ProcessGroupStruct(INamedTypeSymbol struct_symbol, INamedTypeSymbol containing_type)
         {
             /// The containing type is the methods containing type, i.e. the reference we need to hold in order to be able to execute methods.
-            /// If that's equal to the containing type of the <param name="structSymbol"/>,
+            /// If that's equal to the containing type of the <param name="struct_symbol"/>,
             ///     then we need to initialize the property with this,
             ///     otherwise with this.group_internal__parent.
-            var group_containing_type_is_containing_type = SymbolEqualityComparer.Default.Equals(structSymbol.ContainingType, containing_type);
+            var group_containing_type_is_containing_type = SymbolEqualityComparer.Default.Equals(struct_symbol.ContainingType, containing_type);
             var initializer = group_containing_type_is_containing_type ? "this" : "this.group_internal__parent";
             var outer_name = containing_type.Name;
             var outer_type_parameters = string.Join(", ", containing_type.TypeArguments.Select(t => t.Name));
             outer_type_parameters = string.IsNullOrEmpty(outer_type_parameters) ? outer_type_parameters : "<" + outer_type_parameters + ">";
             var outer_full_name = outer_name + outer_type_parameters;
             var inner_code = $@"
-public partial struct {structSymbol.Name}
+public partial struct {struct_symbol.Name}
 {{
     private {outer_full_name} group_internal__parent;
-    public {structSymbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}
+    public {struct_symbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}
 }}
-public {structSymbol.Name} {structSymbol.Name.Substring(1)} => new {structSymbol.Name}({initializer});
+public {struct_symbol.Name} {struct_symbol.Name.Substring(1)} => new {struct_symbol.Name}({initializer});
 ";
-            return WrapInOuterTypesAndNamespace(inner_code, structSymbol);
+            return WrapInOuterTypesAndNamespace(inner_code, struct_symbol);
         }
 
-        private static string WrapInOuterTypesAndNamespace(string inner_code, ISymbol structSymbol)
+        private static string WrapInOuterTypesAndNamespace(string inner_code, ISymbol struct_symbol)
         {
-            for (var symbol = structSymbol; symbol.ContainingSymbol != null && symbol.ContainingSymbol is INamedTypeSymbol containing_type; symbol = symbol.ContainingSymbol)
+            for (var symbol = struct_symbol; symbol.ContainingSymbol != null && symbol.ContainingSymbol is INamedTypeSymbol containing_type; symbol = symbol.ContainingSymbol)
             {
                 var accessibility = containing_type.DeclaredAccessibility.ToString().ToLowerInvariant();
                 var type_kind = containing_type.TypeKind == TypeKind.Struct ? "struct" : "class";
@@ -106,7 +105,7 @@ public {structSymbol.Name} {structSymbol.Name.Substring(1)} => new {structSymbol
 {inner_code.Indented()}}}
 ";
             }
-            var namespaceName = structSymbol.ContainingNamespace.ToDisplayString();
+            var namespaceName = struct_symbol.ContainingNamespace.ToDisplayString();
             return @$"
 namespace {namespaceName}
 {{

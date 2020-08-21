@@ -5,12 +5,12 @@ namespace IntegrationTest
 {
     public partial class Class1
     {
-        public partial struct _Group1
+        public partial struct GGroup1
         {
-            public partial struct _SubGroup { }
+            public partial struct GSubGroup { }
         }
-        [Group(typeof(_Group1))] public void Foo() { Console.WriteLine(nameof(Foo)); }
-        [Group(typeof(_Group1._SubGroup))] public void NestedFoo() { Console.WriteLine(nameof(NestedFoo)); }
+        [Group(typeof(GGroup1))] public void Foo() { Console.WriteLine(nameof(Foo)); }
+        [Group(typeof(GGroup1.GSubGroup))] public void NestedFoo() { Console.WriteLine(nameof(NestedFoo)); }
         public void Consumption()
         {
             Foo();

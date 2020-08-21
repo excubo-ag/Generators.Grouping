@@ -19,7 +19,7 @@ namespace Excubo.Generators.Grouping
 
         public void Execute(SourceGeneratorContext context)
         {
-            context.AddCode("GroupAttribute", attributeText);
+            context.AddCode("GroupAttribute", AttributeText);
 
             if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
             {
@@ -34,7 +34,7 @@ namespace Excubo.Generators.Grouping
                 .Where(m => m != null).Select(m => m!.Value); // take those that have valid group information
             foreach (var method in target_methods)
             {
-                GenerateMethod(context, method.Group, method);
+                GenerateMethod(context, method);
             }
             var groups = candidate_methods
                 .SelectMany(WithAnnotations)                 // unroll methods with multiple group attributes into one long list
@@ -47,7 +47,7 @@ namespace Excubo.Generators.Grouping
             }
         }
 
-        private void GenerateMethod(SourceGeneratorContext context, INamedTypeSymbol group, GroupedMethod method)
+        private void GenerateMethod(SourceGeneratorContext context, GroupedMethod method)
         {
             context.AddCode($"group_{method.Group.Name}_{method.Symbol.Name}", ProcessMethod(method));
         }
@@ -55,7 +55,7 @@ namespace Excubo.Generators.Grouping
         private static Compilation GetCompilation(SourceGeneratorContext context)
         {
             var options = (context.Compilation as CSharpCompilation)!.SyntaxTrees[0].Options as CSharpParseOptions;
-            var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(attributeText, Encoding.UTF8), options));
+            var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(AttributeText, Encoding.UTF8), options));
             return compilation;
         }
 
@@ -186,10 +186,10 @@ namespace Excubo.Generators.Grouping
             /// <summary>
             /// Called for every syntax node in the compilation, we can inspect the nodes and save any information useful for generation
             /// </summary>
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+            public void OnVisitSyntaxNode(SyntaxNode syntax_node)
             {
                 // any method with at least one attribute is a candidate for property generation
-                if (syntaxNode is MethodDeclarationSyntax memberDeclarationSyntax && memberDeclarationSyntax.AttributeLists.Count > 0)
+                if (syntax_node is MethodDeclarationSyntax memberDeclarationSyntax && memberDeclarationSyntax.AttributeLists.Count > 0)
                 {
                     CandidateMethods.Add(memberDeclarationSyntax);
                 }
