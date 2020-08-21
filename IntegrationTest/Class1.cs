@@ -5,7 +5,7 @@ namespace IntegrationTest
 {
     public partial class Class1
     {
-        public partial struct _Group1 
+        public partial struct _Group1
         {
             public partial struct _SubGroup { }
         }
