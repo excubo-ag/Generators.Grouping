@@ -39,12 +39,11 @@ namespace Excubo.Generators.Grouping
             var groups = candidate_methods
                 .SelectMany(WithAnnotations)                 // unroll methods with multiple group attributes into one long list
                 .SelectMany(Groups)                          // enrich with information about the group
-                .Where(m => m != null).Select(m => m!)       // take those that have valid group information
                 .Distinct()
                 ;
-            foreach (var group in groups)
+            foreach (var (group, containing_type) in groups)
             {
-                context.AddCode($"group_{group.Name}", ProcessGroupStruct(group));
+                context.AddCode($"group_{group.Name}", ProcessGroupStruct(group, containing_type));
             }
         }
 
@@ -129,8 +128,9 @@ namespace Excubo.Generators.Grouping
         /// </summary>
         /// <param name="method">An annotated method</param>
         /// <returns>Same method with Group annotation information</returns>
-        private static IEnumerable<INamedTypeSymbol> Groups(AnnotatedMethod method)
+        private static IEnumerable<(INamedTypeSymbol GroupType, INamedTypeSymbol ContainingType)> Groups(AnnotatedMethod method)
         {
+            var containing_class = method.Symbol.ContainingType;
             if (method.Attribute.ArgumentList is null)
             {
                 yield break;
@@ -153,7 +153,7 @@ namespace Excubo.Generators.Grouping
             // If we didn't consider _Outer to be a group type too, there would not be any code to make an instance of _Outer available to the user
             for (var type = group_symbol.Value.Symbol; !SymbolEqualityComparer.Default.Equals(type, method.Symbol.ContainingType) && type is INamedTypeSymbol a_group_type; type = type.ContainingType)
             {
-                yield return a_group_type;
+                yield return (GroupType: a_group_type, ContainingType: containing_class);
             }
         }
 

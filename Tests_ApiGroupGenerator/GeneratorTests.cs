@@ -677,10 +677,10 @@ namespace USER
         {
             public partial struct _Inner
             {
-                private _Outer group_internal__parent;
-                public _Inner(_Outer parent) { this.group_internal__parent = parent; }
+                private Container group_internal__parent;
+                public _Inner(Container parent) { this.group_internal__parent = parent; }
             }
-            public _Inner Inner => new _Inner(this);
+            public _Inner Inner => new _Inner(this.group_internal__parent);
         }
     }
 }
@@ -786,10 +786,10 @@ namespace USER
         {
             public partial struct _Inner
             {
-                private _Outer group_internal__parent;
-                public _Inner(_Outer parent) { this.group_internal__parent = parent; }
+                private Container group_internal__parent;
+                public _Inner(Container parent) { this.group_internal__parent = parent; }
             }
-            public _Inner Inner => new _Inner(this);
+            public _Inner Inner => new _Inner(this.group_internal__parent);
         }
     }
 }

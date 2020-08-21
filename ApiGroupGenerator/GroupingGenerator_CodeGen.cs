@@ -69,12 +69,16 @@ public partial struct {method.Group.Name}
         /// </summary>
         /// <param name="structSymbol">The struct to hold all group members</param>
         /// <returns></returns>
-        private static string ProcessGroupStruct(INamedTypeSymbol structSymbol)
+        private static string ProcessGroupStruct(INamedTypeSymbol structSymbol, INamedTypeSymbol containing_type)
         {
-            var outer = structSymbol.ContainingSymbol as INamedTypeSymbol;
-            Debug.Assert(outer != null);
-            var outer_name = outer.Name;
-            var outer_type_parameters = string.Join(", ", outer.TypeArguments.Select(t => t.Name));
+            /// The containing type is the methods containing type, i.e. the reference we need to hold in order to be able to execute methods.
+            /// If that's equal to the containing type of the <param name="structSymbol"/>,
+            ///     then we need to initialize the property with this,
+            ///     otherwise with this.group_internal__parent.
+            var group_containing_type_is_containing_type = SymbolEqualityComparer.Default.Equals(structSymbol.ContainingType, containing_type);
+            var initializer = group_containing_type_is_containing_type ? "this" : "this.group_internal__parent";
+            var outer_name = containing_type.Name;
+            var outer_type_parameters = string.Join(", ", containing_type.TypeArguments.Select(t => t.Name));
             outer_type_parameters = string.IsNullOrEmpty(outer_type_parameters) ? outer_type_parameters : "<" + outer_type_parameters + ">";
             var outer_full_name = outer_name + outer_type_parameters;
             var inner_code = $@"
@@ -83,7 +87,7 @@ public partial struct {structSymbol.Name}
     private {outer_full_name} group_internal__parent;
     public {structSymbol.Name}({outer_full_name} parent) {{ this.group_internal__parent = parent; }}
 }}
-public {structSymbol.Name} {structSymbol.Name.Substring(1)} => new {structSymbol.Name}(this);
+public {structSymbol.Name} {structSymbol.Name.Substring(1)} => new {structSymbol.Name}({initializer});
 ";
             return WrapInOuterTypesAndNamespace(inner_code, structSymbol);
         }
