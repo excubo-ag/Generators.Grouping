@@ -43,13 +43,13 @@ namespace Excubo.Generators.Grouping
                 ;
             foreach (var (group, containing_type) in groups)
             {
-                context.AddCode($"group_{group.Name}", ProcessGroupStruct(group, containing_type));
+                context.AddCode($"group_{group.ToDisplayString()}", ProcessGroupStruct(group, containing_type));
             }
         }
 
         private void GenerateMethod(SourceGeneratorContext context, GroupedMethod method)
         {
-            context.AddCode($"group_{method.Group.Name}_{method.Symbol.Name}", ProcessMethod(method));
+            context.AddCode($"group_{method.Group.ToDisplayString()}_{method.Symbol.ToDisplayString()}", ProcessMethod(method));
         }
 
         private static Compilation GetCompilation(SourceGeneratorContext context)

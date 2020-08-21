@@ -20,8 +20,7 @@ namespace Tests_ApiGroupGenerator
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Single(generated);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -64,11 +63,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Bar.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -87,7 +82,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
 namespace USER
 {
     public partial class Container
@@ -101,7 +96,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -114,7 +109,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
 namespace USER
 {
     public partial class Container
@@ -123,6 +118,109 @@ namespace USER
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
+        }
+    }
+}
+");
+        }
+
+        [Fact]
+        public void Ambiguity()
+        {
+            var userSource = @"
+using Excubo.Generators.Grouping;
+using System;
+
+namespace USER
+{
+    public partial class Container1
+    {
+        public partial struct _Group
+        {
+        }
+        [Group(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
+    }
+    public partial class Container2
+    {
+        public partial struct _Group
+        {
+        }
+        [Group(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
+    }
+}
+";
+            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            generatorDiagnostics.Verify();
+            Assert.Equal(5, generated.Length);
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
+#nullable enable
+using System;
+namespace Excubo.Generators.Grouping
+{
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+    sealed class GroupAttribute : Attribute
+    {
+        public GroupAttribute(Type group_type, string? method_name = null)
+        {
+            GroupType = group_type;
+            MethodName = method_name;
+        }
+        public Type GroupType { get; set; }
+        public string? MethodName { get; set; }
+    }
+}
+#nullable restore
+");
+            generated.ContainsFileWithContent("group_USER.Container1._Group.cs", @"
+namespace USER
+{
+    public partial class Container1
+    {
+        public partial struct _Group
+        {
+            private Container1 group_internal__parent;
+            public _Group(Container1 parent) { this.group_internal__parent = parent; }
+        }
+        public _Group Group => new _Group(this);
+    }
+}
+");
+            generated.ContainsFileWithContent("group_USER.Container1._Group_USER.Container1.Foo().cs", @"
+namespace USER
+{
+    public partial class Container1
+    {
+        public partial struct _Group
+        {
+            public void Foo()
+                => group_internal__parent.Foo();
+        }
+    }
+}
+");
+            generated.ContainsFileWithContent("group_USER.Container2._Group.cs", @"
+namespace USER
+{
+    public partial class Container2
+    {
+        public partial struct _Group
+        {
+            private Container2 group_internal__parent;
+            public _Group(Container2 parent) { this.group_internal__parent = parent; }
+        }
+        public _Group Group => new _Group(this);
+    }
+}
+");
+            generated.ContainsFileWithContent("group_USER.Container2._Group_USER.Container2.Foo().cs", @"
+namespace USER
+{
+    public partial class Container2
+    {
+        public partial struct _Group
+        {
+            public void Foo()
+                => group_internal__parent.Foo();
         }
     }
 }
@@ -151,11 +249,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Bar.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -174,7 +268,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container_T_._Group.cs", @"
 namespace USER
 {
     public partial class Container<T>
@@ -188,7 +282,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container_T_._Group_USER.Container_T_.Foo().cs", @"
 namespace USER
 {
     public partial class Container<T>
@@ -201,7 +295,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container_T_._Group_USER.Container_T_.Bar_T1_(T1, string).cs", @"
 namespace USER
 {
     public partial class Container<T>
@@ -238,11 +332,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Bar.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -261,7 +351,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
 namespace USER
 {
     public partial class Container
@@ -275,7 +365,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -288,7 +378,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
 namespace USER
 {
     public partial class Container
@@ -324,11 +414,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Bar.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -347,7 +433,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
 namespace USER
 {
     public partial class Container
@@ -361,7 +447,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -374,7 +460,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
 namespace USER
 {
     public partial class Container
@@ -410,14 +496,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(7, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group1.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group2.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group1_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group1_Bar.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group2_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group2_Bar.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -436,7 +515,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group1.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group1.cs", @"
 namespace USER
 {
     public partial class Container
@@ -450,7 +529,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group2.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group2.cs", @"
 namespace USER
 {
     public partial class Container
@@ -464,7 +543,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group1_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group1_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -477,7 +556,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group1_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group1_USER.Container.Bar_T1, T2_(T1, string).cs", @"
 namespace USER
 {
     public partial class Container
@@ -490,7 +569,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group2_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group2_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -503,7 +582,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group2_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group2_USER.Container.Bar_T1, T2_(T1, string).cs", @"
 namespace USER
 {
     public partial class Container
@@ -540,11 +619,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Group_Bar.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -563,7 +638,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
 namespace USER
 {
     public partial class Container
@@ -577,7 +652,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -590,7 +665,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Group_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
 namespace USER
 {
     public partial class Container
@@ -630,12 +705,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(5, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Outer.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner_Foo.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Outer_Bar.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -654,7 +724,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Outer.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer.cs", @"
 namespace USER
 {
     public partial class Container
@@ -668,7 +738,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Inner.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner.cs", @"
 namespace USER
 {
     public partial class Container
@@ -685,7 +755,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Inner_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -701,7 +771,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Outer_Bar.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer_USER.Container.Bar().cs", @"
 namespace USER
 {
     public partial class Container
@@ -740,11 +810,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Outer.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner_Foo.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -763,7 +829,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Outer.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer.cs", @"
 namespace USER
 {
     public partial class Container
@@ -777,7 +843,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Inner.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner.cs", @"
 namespace USER
 {
     public partial class Container
@@ -794,7 +860,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Inner_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container
@@ -844,11 +910,7 @@ namespace USER
             var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            Assert.Contains(generated, g => g.Filename.EndsWith("GroupAttribute.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Outer.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner.cs"));
-            Assert.Contains(generated, g => g.Filename.EndsWith("group__Inner_Foo.cs"));
-            generated.First(g => g.Filename.EndsWith("GroupAttribute.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
 namespace Excubo.Generators.Grouping
@@ -867,7 +929,7 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.First(g => g.Filename.EndsWith("group__Outer.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer.cs", @"
 namespace USER
 {
     public partial class Container
@@ -884,7 +946,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Inner.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner.cs", @"
 namespace USER
 {
     public partial class Container
@@ -906,7 +968,7 @@ namespace USER
     }
 }
 ");
-            generated.First(g => g.Filename.EndsWith("group__Inner_Foo.cs")).Content.Should().BeIgnoringLineEndings(@"
+            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner_USER.Container.Foo().cs", @"
 namespace USER
 {
     public partial class Container

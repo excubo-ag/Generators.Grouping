@@ -7,6 +7,9 @@ namespace IntegrationTest
     {
         public partial struct GGroup1
         {
+            /// <summary>
+            /// This is a subgroup
+            /// </summary>
             public partial struct GSubGroup { }
         }
         [Group(typeof(GGroup1))] public void Foo() { Console.WriteLine(nameof(Foo)); }
