@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using System.Linq;
 
 namespace Excubo.Generators.Grouping
@@ -45,7 +46,7 @@ namespace Excubo.Generators.Grouping
             type_parameters = string.IsNullOrEmpty(type_parameters) ? type_parameters : "<" + type_parameters + ">";
             var constraints = method.Declaration.ConstraintClauses.ToFullString();
             constraints = string.IsNullOrEmpty(constraints) ? constraints : " " + constraints.Trim(' ');
-            var parameters = string.Join(", ", method.Symbol.Parameters.Select(p => p.Type.ToDisplayString() + " " + p.Name));
+            var parameters = string.Join(", ", method.Symbol.Parameters.Select(p => (p.IsParams ? "params " : "") + p.Type.ToDisplayString() + " " + p.Name));
             var arguments = string.Join(", ", method.Symbol.Parameters.Select(p => p.Name));
             var type_kind = method.Group.TypeKind switch { TypeKind.Class => "class", TypeKind.Interface => "interface", _ => "struct" };
             var method_impl = method.Group.TypeKind == TypeKind.Interface ? string.Empty : $"=> group_internal__parent.{method.Symbol.Name}{type_parameters}({arguments})";
@@ -70,7 +71,16 @@ namespace Excubo.Generators.Grouping
         private static string ProcessGroup(INamedTypeSymbol group_symbol, INamedTypeSymbol containing_type)
         {
             // we copy the comment on the struct/interface to the auto-generated property
-            var comments_on_group = string.Join("", group_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Select(t => t.ToFullString()));
+            const SyntaxKind comment_kinds = SyntaxKind.DocumentationCommentExteriorTrivia
+                | SyntaxKind.EndOfDocumentationCommentToken
+                | SyntaxKind.MultiLineCommentTrivia
+                | SyntaxKind.MultiLineDocumentationCommentTrivia
+                | SyntaxKind.SingleLineCommentTrivia
+                | SyntaxKind.SingleLineDocumentationCommentTrivia
+                | SyntaxKind.XmlComment
+                | SyntaxKind.XmlCommentEndToken
+                | SyntaxKind.XmlCommentStartToken;
+            var comments_on_group = string.Join("", group_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Where(t => t.IsKind(comment_kinds)).Select(t => t.ToFullString()));
             /// The containing type is the methods containing type, i.e. the reference we need to hold in order to be able to execute methods.
             /// If that's equal to the containing type of the <param name="group_symbol"/>,
             ///     then we need to initialize the property with this,
