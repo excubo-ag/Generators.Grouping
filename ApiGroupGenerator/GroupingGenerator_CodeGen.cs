@@ -71,16 +71,21 @@ namespace Excubo.Generators.Grouping
         private static string ProcessGroup(INamedTypeSymbol group_symbol, INamedTypeSymbol containing_type)
         {
             // we copy the comment on the struct/interface to the auto-generated property
-            const SyntaxKind comment_kinds = SyntaxKind.DocumentationCommentExteriorTrivia
-                | SyntaxKind.EndOfDocumentationCommentToken
-                | SyntaxKind.MultiLineCommentTrivia
-                | SyntaxKind.MultiLineDocumentationCommentTrivia
-                | SyntaxKind.SingleLineCommentTrivia
-                | SyntaxKind.SingleLineDocumentationCommentTrivia
-                | SyntaxKind.XmlComment
-                | SyntaxKind.XmlCommentEndToken
-                | SyntaxKind.XmlCommentStartToken;
-            var comments_on_group = string.Join("", group_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Where(t => t.IsKind(comment_kinds)).Select(t => t.ToFullString()));
+            static bool IsCommentOrWhitespaceKind(SyntaxTrivia trivia)
+            {
+                return trivia.IsKind(SyntaxKind.DocumentationCommentExteriorTrivia)
+                    || trivia.IsKind(SyntaxKind.EndOfDocumentationCommentToken)
+                    || trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)
+                    || trivia.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia)
+                    || trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
+                    || trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)
+                    || trivia.IsKind(SyntaxKind.XmlComment)
+                    || trivia.IsKind(SyntaxKind.XmlCommentEndToken)
+                    || trivia.IsKind(SyntaxKind.XmlCommentStartToken)
+                    || trivia.IsKind(SyntaxKind.WhitespaceTrivia)
+                    || trivia.IsKind(SyntaxKind.EndOfLineTrivia);
+            }
+            var comments_on_group = string.Join("", group_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Where(t => IsCommentOrWhitespaceKind(t)).Select(t => t.ToFullString()));
             /// The containing type is the methods containing type, i.e. the reference we need to hold in order to be able to execute methods.
             /// If that's equal to the containing type of the <param name="group_symbol"/>,
             ///     then we need to initialize the property with this,

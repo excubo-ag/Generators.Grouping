@@ -1,6 +1,4 @@
 ﻿using Excubo.Generators.Grouping;
-using FluentAssertions;
-using System.Linq;
 using Tests_ApiGroupGenerator.Helpers;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,7 +15,7 @@ namespace Tests_ApiGroupGenerator
         public void Empty()
         {
             var userSource = "";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Single(generated);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -48,19 +46,28 @@ namespace Excubo.Generators.Grouping
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace SimpleGroup
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [Group(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
-        [Group(typeof(_Group))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+        [Group(typeof(GGroup))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group.Foo();
+            container.Group.Bar<object, object>(new object(), null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -82,26 +89,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_SimpleGroup.Container.GGroup.cs", @"
+namespace SimpleGroup
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container group_internal__parent;
-            public _Group(Container parent) { this.group_internal__parent = parent; }
+            public GGroup(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_SimpleGroup.Container.GGroup_SimpleGroup.Container.Foo().cs", @"
+namespace SimpleGroup
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -109,12 +116,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_SimpleGroup.Container.GGroup_SimpleGroup.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace SimpleGroup
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -123,6 +130,7 @@ namespace USER
 }
 ");
         }
+
         [Fact]
         public void Params()
         {
@@ -130,18 +138,26 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace Params
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [Group(typeof(_Group))] public void Params(params (int v1, int v2)[] objects) { throw new NotImplementedException(); }
+        [Group(typeof(GGroup))] public void Params(params (int v1, int v2)[] objects) { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group.Params((0, 1), (1, 2));
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(3, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -163,26 +179,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Params.Container.GGroup.cs", @"
+namespace Params
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container group_internal__parent;
-            public _Group(Container parent) { this.group_internal__parent = parent; }
+            public GGroup(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Params(params (int v1, int v2)[]).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Params.Container.GGroup_Params.Container.Params(params (int v1, int v2)[]).cs", @"
+namespace Params
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Params(params (int v1, int v2)[] objects)
                 => group_internal__parent.Params(objects);
@@ -191,6 +207,7 @@ namespace USER
 }
 ");
         }
+
         [Fact]
         public void Interface()
         {
@@ -198,23 +215,35 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace Interface
 {
     public partial interface IContainer
     {
-        public partial interface _IGroup { }
-        [Group(typeof(_IGroup))] public void Foo();
-        [Group(typeof(_IGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class;
+        public partial interface IGGroup { }
+        [Group(typeof(IGGroup))] public void Foo();
+        [Group(typeof(IGGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class;
     }
     public partial class Container : IContainer
     {
-        public partial struct _Group : IContainer._IGroup { }
-        [Group(typeof(_Group))] public void Foo() { }
-        [Group(typeof(_Group))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new Exception(""); }
+        public partial struct GGroup : IContainer.IGGroup { }
+        [Group(typeof(GGroup))] public void Foo() { }
+        [Group(typeof(GGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new Exception(""); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group.Foo();
+            container.Group.Bar<object, object>(null, null);
+            var icontainer = container as IContainer;
+            icontainer.Group.Foo();
+            icontainer.Group.Bar<object, object>(null, null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(7, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -236,24 +265,24 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.IContainer._IGroup.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Interface.IContainer.IGGroup.cs", @"
+namespace Interface
 {
     public partial interface IContainer
     {
-        public partial interface _IGroup
+        public partial interface IGGroup
         {
         }
-        _IGroup Group { get; }
+        IGGroup Group { get; }
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.IContainer._IGroup_USER.IContainer.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Interface.IContainer.IGGroup_Interface.IContainer.Foo().cs", @"
+namespace Interface
 {
     public partial interface IContainer
     {
-        public partial interface _IGroup
+        public partial interface IGGroup
         {
             public void Foo()
                 ;
@@ -261,12 +290,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.IContainer._IGroup_USER.IContainer.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Interface.IContainer.IGGroup_Interface.IContainer.Bar_T1, T2_(T1, string).cs", @"
+namespace Interface
 {
     public partial interface IContainer
     {
-        public partial interface _IGroup
+        public partial interface IGGroup
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 ;
@@ -274,27 +303,27 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Interface.Container.GGroup.cs", @"
+namespace Interface
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container group_internal__parent;
-            public _Group(Container parent) { this.group_internal__parent = parent; }
+            public GGroup(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
-        IContainer._IGroup IContainer.Group => Group;
+        public GGroup Group => new GGroup(this);
+        IContainer.IGGroup IContainer.Group => Group;
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Interface.Container.GGroup_Interface.Container.Foo().cs", @"
+namespace Interface
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -302,12 +331,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Interface.Container.GGroup_Interface.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace Interface
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -316,34 +345,38 @@ namespace USER
 }
 ");
         }
+
         [Fact]
-        public void InterfaceInRegion()
+        public void Region()
         {
             var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace Region
 {
-    public partial interface IContainer
-    {
-        public partial interface _IGroup { }
-        [Group(typeof(_IGroup))] public void Foo();
-        [Group(typeof(_IGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class;
-    }
-    public partial class Container : IContainer
+    public partial class Container
     {
         #region MyGroup
-        public partial struct _Group : IContainer._IGroup { }
-        [Group(typeof(_Group))] public void Foo() { }
-        [Group(typeof(_Group))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new Exception(""); }
+        public partial struct GGroup { }
+        [Group(typeof(GGroup))] public void Foo() { }
+        [Group(typeof(GGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new Exception(""); }
         #endregion
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group.Foo();
+            container.Group.Bar<object, object>(null, null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
-            Assert.Equal(7, generated.Length);
+            Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
 #nullable enable
 using System;
@@ -363,65 +396,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.IContainer._IGroup.cs", @"
-namespace USER
-{
-    public partial interface IContainer
-    {
-        public partial interface _IGroup
-        {
-        }
-        _IGroup Group { get; }
-    }
-}
-");
-            generated.ContainsFileWithContent("group_USER.IContainer._IGroup_USER.IContainer.Foo().cs", @"
-namespace USER
-{
-    public partial interface IContainer
-    {
-        public partial interface _IGroup
-        {
-            public void Foo()
-                ;
-        }
-    }
-}
-");
-            generated.ContainsFileWithContent("group_USER.IContainer._IGroup_USER.IContainer.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
-{
-    public partial interface IContainer
-    {
-        public partial interface _IGroup
-        {
-            public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
-                ;
-        }
-    }
-}
-");
-            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Region.Container.GGroup.cs", @"
+namespace Region
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container group_internal__parent;
-            public _Group(Container parent) { this.group_internal__parent = parent; }
+            public GGroup(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
-        IContainer._IGroup IContainer.Group => Group;
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Region.Container.GGroup_Region.Container.Foo().cs", @"
+namespace Region
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -429,12 +423,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Region.Container.GGroup_Region.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace Region
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -451,25 +445,36 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace Ambiguity
 {
     public partial class Container1
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [Group(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GGroup))] public void Foo() { throw new NotImplementedException(); }
     }
     public partial class Container2
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [Group(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GGroup))] public void Foo() { throw new NotImplementedException(); }
+    }
+
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container1 = new Container1();
+            container1.Group.Foo();
+            var container2 = new Container2();
+            container2.Group.Foo();
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(5, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -491,26 +496,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container1._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Ambiguity.Container1.GGroup.cs", @"
+namespace Ambiguity
 {
     public partial class Container1
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container1 group_internal__parent;
-            public _Group(Container1 parent) { this.group_internal__parent = parent; }
+            public GGroup(Container1 parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container1._Group_USER.Container1.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Ambiguity.Container1.GGroup_Ambiguity.Container1.Foo().cs", @"
+namespace Ambiguity
 {
     public partial class Container1
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -518,26 +523,26 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container2._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Ambiguity.Container2.GGroup.cs", @"
+namespace Ambiguity
 {
     public partial class Container2
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container2 group_internal__parent;
-            public _Group(Container2 parent) { this.group_internal__parent = parent; }
+            public GGroup(Container2 parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container2._Group_USER.Container2.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Ambiguity.Container2.GGroup_Ambiguity.Container2.Foo().cs", @"
+namespace Ambiguity
 {
     public partial class Container2
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -554,19 +559,29 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace GenericContainer
 {
     public partial class Container<T>
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [Group(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
-        [Group(typeof(_Group))] public (T, T1) Bar<T1>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+        [Group(typeof(GGroup))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GGroup))] public (T, T1) Bar<T1>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+    }
+
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container<object>();
+            container.Group.Foo();
+            container.Group.Bar<object>(null, null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -588,26 +603,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container_T_._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_GenericContainer.Container_T_.GGroup.cs", @"
+namespace GenericContainer
 {
     public partial class Container<T>
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container<T> group_internal__parent;
-            public _Group(Container<T> parent) { this.group_internal__parent = parent; }
+            public GGroup(Container<T> parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container_T_._Group_USER.Container_T_.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_GenericContainer.Container_T_.GGroup_GenericContainer.Container_T_.Foo().cs", @"
+namespace GenericContainer
 {
     public partial class Container<T>
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -615,12 +630,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container_T_._Group_USER.Container_T_.Bar_T1_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_GenericContainer.Container_T_.GGroup_GenericContainer.Container_T_.Bar_T1_(T1, string).cs", @"
+namespace GenericContainer
 {
     public partial class Container<T>
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public (T, T1) Bar<T1>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1>(t1, tmp);
@@ -631,25 +646,34 @@ namespace USER
         }
 
         [Fact]
-        public void SimpleGroupAttribute()
+        public void FullAttributeName()
         {
             var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace FullAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [GroupAttribute(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
-        [GroupAttribute(typeof(_Group))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+        [GroupAttribute(typeof(GGroup))] public void Foo() { throw new NotImplementedException(); }
+        [GroupAttribute(typeof(GGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group.Foo();
+            container.Group.Bar<object, object>(new object(), null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -671,26 +695,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_FullAttributeName.Container.GGroup.cs", @"
+namespace FullAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container group_internal__parent;
-            public _Group(Container parent) { this.group_internal__parent = parent; }
+            public GGroup(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_FullAttributeName.Container.GGroup_FullAttributeName.Container.Foo().cs", @"
+namespace FullAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -698,12 +722,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_FullAttributeName.Container.GGroup_FullAttributeName.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace FullAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -714,24 +738,33 @@ namespace USER
         }
 
         [Fact]
-        public void SimpleGroupAttributeFullyQualified()
+        public void FullyQualifiedAttributeName()
         {
             var userSource = @"
 using System;
 
-namespace USER
+namespace FullyQualifiedAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [Excubo.Generators.Grouping.GroupAttribute(typeof(_Group))] public void Foo() { throw new NotImplementedException(); }
-        [Excubo.Generators.Grouping.GroupAttribute(typeof(_Group))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+        [Excubo.Generators.Grouping.GroupAttribute(typeof(GGroup))] public void Foo() { throw new NotImplementedException(); }
+        [Excubo.Generators.Grouping.GroupAttribute(typeof(GGroup))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group.Foo();
+            container.Group.Bar<object, object>(new object(), null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -753,26 +786,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_FullyQualifiedAttributeName.Container.GGroup.cs", @"
+namespace FullyQualifiedAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container group_internal__parent;
-            public _Group(Container parent) { this.group_internal__parent = parent; }
+            public GGroup(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_FullyQualifiedAttributeName.Container.GGroup_FullyQualifiedAttributeName.Container.Foo().cs", @"
+namespace FullyQualifiedAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -780,12 +813,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_FullyQualifiedAttributeName.Container.GGroup_FullyQualifiedAttributeName.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace FullyQualifiedAttributeName
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -802,18 +835,29 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace MultipleGroups
 {
     public partial class Container
     {
-        public partial struct _Group1 {}
-        public partial struct _Group2 {}
-        [Group(typeof(_Group1))] [Group(typeof(_Group2))] public void Foo() { throw new NotImplementedException(); }
-        [Group(typeof(_Group1))] [Group(typeof(_Group2))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+        public partial struct GGroup1 { }
+        public partial struct GGroup2 { }
+        [Group(typeof(GGroup1))] [Group(typeof(GGroup2))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GGroup1))] [Group(typeof(GGroup2))] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group1.Foo();
+            container.Group1.Bar<object, object>(new object(), null);
+            container.Group2.Foo();
+            container.Group2.Bar<object, object>(new object(), null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(7, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -835,40 +879,40 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group1.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_MultipleGroups.Container.GGroup1.cs", @"
+namespace MultipleGroups
 {
     public partial class Container
     {
-        public partial struct _Group1
+        public partial struct GGroup1
         {
             private Container group_internal__parent;
-            public _Group1(Container parent) { this.group_internal__parent = parent; }
+            public GGroup1(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group1 Group1 => new _Group1(this);
+        public GGroup1 Group1 => new GGroup1(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group2.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_MultipleGroups.Container.GGroup2.cs", @"
+namespace MultipleGroups
 {
     public partial class Container
     {
-        public partial struct _Group2
+        public partial struct GGroup2
         {
             private Container group_internal__parent;
-            public _Group2(Container parent) { this.group_internal__parent = parent; }
+            public GGroup2(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group2 Group2 => new _Group2(this);
+        public GGroup2 Group2 => new GGroup2(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group1_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_MultipleGroups.Container.GGroup1_MultipleGroups.Container.Foo().cs", @"
+namespace MultipleGroups
 {
     public partial class Container
     {
-        public partial struct _Group1
+        public partial struct GGroup1
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -876,12 +920,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group1_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_MultipleGroups.Container.GGroup1_MultipleGroups.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace MultipleGroups
 {
     public partial class Container
     {
-        public partial struct _Group1
+        public partial struct GGroup1
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -889,12 +933,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group2_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_MultipleGroups.Container.GGroup2_MultipleGroups.Container.Foo().cs", @"
+namespace MultipleGroups
 {
     public partial class Container
     {
-        public partial struct _Group2
+        public partial struct GGroup2
         {
             public void Foo()
                 => group_internal__parent.Foo();
@@ -902,12 +946,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group2_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_MultipleGroups.Container.GGroup2_MultipleGroups.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace MultipleGroups
 {
     public partial class Container
     {
-        public partial struct _Group2
+        public partial struct GGroup2
         {
             public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -924,19 +968,28 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace Renaming
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
         }
-        [Group(typeof(_Group), ""Frobulate"")] public void Foo() { throw new NotImplementedException(); }
-        [Group(typeof(_Group), ""Bamboozle"")] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+        [Group(typeof(GGroup), ""Frobulate"")] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GGroup), ""Bamboozle"")] public (T2, T1) Bar<T1, T2>(T1 t1, string tmp) where T1 : class { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Group.Frobulate();
+            container.Group.Bamboozle<object, object>(null, null);
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -958,26 +1011,26 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Renaming.Container.GGroup.cs", @"
+namespace Renaming
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             private Container group_internal__parent;
-            public _Group(Container parent) { this.group_internal__parent = parent; }
+            public GGroup(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Group Group => new _Group(this);
+        public GGroup Group => new GGroup(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Renaming.Container.GGroup_Renaming.Container.Foo().cs", @"
+namespace Renaming
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public void Frobulate()
                 => group_internal__parent.Foo();
@@ -985,12 +1038,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Group_USER.Container.Bar_T1, T2_(T1, string).cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Renaming.Container.GGroup_Renaming.Container.Bar_T1, T2_(T1, string).cs", @"
+namespace Renaming
 {
     public partial class Container
     {
-        public partial struct _Group
+        public partial struct GGroup
         {
             public (T2, T1) Bamboozle<T1, T2>(T1 t1, string tmp) where T1 : class
                 => group_internal__parent.Bar<T1, T2>(t1, tmp);
@@ -1007,22 +1060,31 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace Nesting
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
             }
         }
-        [Group(typeof(_Outer._Inner))] public void Foo() { throw new NotImplementedException(); }
-        [Group(typeof(_Outer))] public void Bar() { throw new NotImplementedException(); }
+        [Group(typeof(GOuter.GInner))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GOuter))] public void Bar() { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Outer.Inner.Foo();
+            container.Outer.Bar();
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(5, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -1044,45 +1106,45 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Nesting.Container.GOuter.cs", @"
+namespace Nesting
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
             private Container group_internal__parent;
-            public _Outer(Container parent) { this.group_internal__parent = parent; }
+            public GOuter(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Outer Outer => new _Outer(this);
+        public GOuter Outer => new GOuter(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Nesting.Container.GOuter.GInner.cs", @"
+namespace Nesting
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
                 private Container group_internal__parent;
-                public _Inner(Container parent) { this.group_internal__parent = parent; }
+                public GInner(Container parent) { this.group_internal__parent = parent; }
             }
-            public _Inner Inner => new _Inner(this.group_internal__parent);
+            public GInner Inner => new GInner(this.group_internal__parent);
         }
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Nesting.Container.GOuter.GInner_Nesting.Container.Foo().cs", @"
+namespace Nesting
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
                 public void Foo()
                     => group_internal__parent.Foo();
@@ -1091,12 +1153,12 @@ namespace USER
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer_USER.Container.Bar().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Nesting.Container.GOuter_Nesting.Container.Bar().cs", @"
+namespace Nesting
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
             public void Bar()
                 => group_internal__parent.Bar();
@@ -1113,21 +1175,29 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace NestingOnlyOneMethodInInner
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
             }
         }
-        [Group(typeof(_Outer._Inner))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GOuter.GInner))] public void Foo() { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Outer.Inner.Foo();
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -1149,45 +1219,45 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_NestingOnlyOneMethodInInner.Container.GOuter.cs", @"
+namespace NestingOnlyOneMethodInInner
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
             private Container group_internal__parent;
-            public _Outer(Container parent) { this.group_internal__parent = parent; }
+            public GOuter(Container parent) { this.group_internal__parent = parent; }
         }
-        public _Outer Outer => new _Outer(this);
+        public GOuter Outer => new GOuter(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_NestingOnlyOneMethodInInner.Container.GOuter.GInner.cs", @"
+namespace NestingOnlyOneMethodInInner
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
                 private Container group_internal__parent;
-                public _Inner(Container parent) { this.group_internal__parent = parent; }
+                public GInner(Container parent) { this.group_internal__parent = parent; }
             }
-            public _Inner Inner => new _Inner(this.group_internal__parent);
+            public GInner Inner => new GInner(this.group_internal__parent);
         }
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_NestingOnlyOneMethodInInner.Container.GOuter.GInner_NestingOnlyOneMethodInInner.Container.Foo().cs", @"
+namespace NestingOnlyOneMethodInInner
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
                 public void Foo()
                     => group_internal__parent.Foo();
@@ -1205,29 +1275,37 @@ namespace USER
 using Excubo.Generators.Grouping;
 using System;
 
-namespace USER
+namespace Comments
 {
     public partial class Container
     {
         /// <summary>
         /// Comment on <see cref=""Outer""/>
         /// </summary>
-        public partial struct _Outer
+        public partial struct GOuter
         {
             /// <summary>
-            /// Comment on <see cref=""_Inner""/>
+            /// Comment on <see cref=""GInner""/>
             /// </summary>
             // another comment
             /* seriously: three kinds of comments */
-            public partial struct _Inner
+            public partial struct GInner
             {
             }
         }
-        [Group(typeof(_Outer._Inner))] public void Foo() { throw new NotImplementedException(); }
+        [Group(typeof(GOuter.GInner))] public void Foo() { throw new NotImplementedException(); }
+    }
+    public class Consumption
+    {
+        public void Consume()
+        {
+            var container = new Container();
+            container.Outer.Inner.Foo();
+        }
     }
 }
 ";
-            var comp = RunGenerator(userSource, out var generatorDiagnostics, out var generated);
+            RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
             generated.ContainsFileWithContent("GroupAttribute.cs", @"
@@ -1249,53 +1327,53 @@ namespace Excubo.Generators.Grouping
 }
 #nullable restore
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Comments.Container.GOuter.cs", @"
+namespace Comments
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
             private Container group_internal__parent;
-            public _Outer(Container parent) { this.group_internal__parent = parent; }
+            public GOuter(Container parent) { this.group_internal__parent = parent; }
         }
         /// <summary>
         /// Comment on <see cref=""Outer""/>
         /// </summary>
-        public _Outer Outer => new _Outer(this);
+        public GOuter Outer => new GOuter(this);
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner.cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Comments.Container.GOuter.GInner.cs", @"
+namespace Comments
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
                 private Container group_internal__parent;
-                public _Inner(Container parent) { this.group_internal__parent = parent; }
+                public GInner(Container parent) { this.group_internal__parent = parent; }
             }
             /// <summary>
-            /// Comment on <see cref=""_Inner""/>
+            /// Comment on <see cref=""GInner""/>
             /// </summary>
             // another comment
             /* seriously: three kinds of comments */
-            public _Inner Inner => new _Inner(this.group_internal__parent);
+            public GInner Inner => new GInner(this.group_internal__parent);
         }
     }
 }
 ");
-            generated.ContainsFileWithContent("group_USER.Container._Outer._Inner_USER.Container.Foo().cs", @"
-namespace USER
+            generated.ContainsFileWithContent("group_Comments.Container.GOuter.GInner_Comments.Container.Foo().cs", @"
+namespace Comments
 {
     public partial class Container
     {
-        public partial struct _Outer
+        public partial struct GOuter
         {
-            public partial struct _Inner
+            public partial struct GInner
             {
                 public void Foo()
                     => group_internal__parent.Foo();

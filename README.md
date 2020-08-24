@@ -113,6 +113,12 @@ public class API
 
 etc.
 
+:information_source:
+The struct `_GroupName` allows this library to create a property named `GroupName`.
+The group name is always equivalent to the name of the struct without the first character.
+If you dislike `_`, you can use any other character, e.g. `G` for group.
+:information_source:
+
 This library facilitates writing such groups, without interfering with the original API:
 
 ```cs

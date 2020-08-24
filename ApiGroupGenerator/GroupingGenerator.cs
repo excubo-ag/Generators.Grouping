@@ -144,13 +144,13 @@ namespace Excubo.Generators.Grouping
             // the group type that is used needs to be a child of the methods containing type.
             // every type that sits between the group type and the methods containing type is considered to be a group type.
             // this enables the situation
-            // public partial struct _Outer {
-            //      public partial struct _Inner { }
+            // public partial struct GOuter {
+            //      public partial struct GInner { }
             // }
-            // [Group(typeof(_Outer._Inner))] public void Foo() {}
+            // [Group(typeof(GOuter.GInner))] public void Foo() {}
             //
-            // _Outer._Inner is a group type by usage in the attribute.
-            // If we didn't consider _Outer to be a group type too, there would not be any code to make an instance of _Outer available to the user
+            // GOuter.GInner is a group type by usage in the attribute.
+            // If we didn't consider GOuter to be a group type too, there would not be any code to make an instance of GOuter available to the user
             for (var type = group_symbol.Value.Symbol; !SymbolEqualityComparer.Default.Equals(type, method.Symbol.ContainingType) && type is INamedTypeSymbol a_group_type; type = type.ContainingType)
             {
                 yield return (GroupType: a_group_type, ContainingType: containing_class);
