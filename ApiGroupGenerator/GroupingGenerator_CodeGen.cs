@@ -41,6 +41,7 @@ namespace Excubo.Generators.Grouping
         /// <returns></returns>
         private string ProcessMethod(GroupedMethod method)
         {
+            var comments_on_method = string.Join("", method.Symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Where(t => IsCommentOrWhitespaceKind(t)).Select(t => t.ToFullString()));
             var returnType = method.Symbol.ReturnType.ToDisplayString();
             var type_parameters = string.Join(", ", method.Symbol.TypeArguments.Select(t => t.Name));
             type_parameters = string.IsNullOrEmpty(type_parameters) ? type_parameters : "<" + type_parameters + ">";
@@ -53,6 +54,7 @@ namespace Excubo.Generators.Grouping
             var innerCode = $@"
 {method.Group.DeclaredAccessibility.ToString().ToLowerInvariant()} partial {type_kind} {method.Group.Name}
 {{
+    {comments_on_method}
     public {returnType} {method.TargetName}{type_parameters}({parameters}){constraints}
         {method_impl};
 }}";
@@ -71,20 +73,6 @@ namespace Excubo.Generators.Grouping
         private static string ProcessGroup(INamedTypeSymbol group_symbol, INamedTypeSymbol containing_type)
         {
             // we copy the comment on the struct/interface to the auto-generated property
-            static bool IsCommentOrWhitespaceKind(SyntaxTrivia trivia)
-            {
-                return trivia.IsKind(SyntaxKind.DocumentationCommentExteriorTrivia)
-                    || trivia.IsKind(SyntaxKind.EndOfDocumentationCommentToken)
-                    || trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)
-                    || trivia.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia)
-                    || trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
-                    || trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)
-                    || trivia.IsKind(SyntaxKind.XmlComment)
-                    || trivia.IsKind(SyntaxKind.XmlCommentEndToken)
-                    || trivia.IsKind(SyntaxKind.XmlCommentStartToken)
-                    || trivia.IsKind(SyntaxKind.WhitespaceTrivia)
-                    || trivia.IsKind(SyntaxKind.EndOfLineTrivia);
-            }
             var comments_on_group = string.Join("", group_symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Where(t => IsCommentOrWhitespaceKind(t)).Select(t => t.ToFullString()));
             /// The containing type is the methods containing type, i.e. the reference we need to hold in order to be able to execute methods.
             /// If that's equal to the containing type of the <param name="group_symbol"/>,
@@ -143,6 +131,26 @@ namespace {namespaceName}
     {inner_code}
 }}
 ";
+        }
+
+        /// <summary>
+        /// Determines whether trivia is comment or any whitespace. This is used to copy&paste the comments on a type/method to the generated property/method
+        /// </summary>
+        /// <param name="trivia"></param>
+        /// <returns></returns>
+        private static bool IsCommentOrWhitespaceKind(SyntaxTrivia trivia)
+        {
+            return trivia.IsKind(SyntaxKind.DocumentationCommentExteriorTrivia)
+                || trivia.IsKind(SyntaxKind.EndOfDocumentationCommentToken)
+                || trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)
+                || trivia.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia)
+                || trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
+                || trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)
+                || trivia.IsKind(SyntaxKind.XmlComment)
+                || trivia.IsKind(SyntaxKind.XmlCommentEndToken)
+                || trivia.IsKind(SyntaxKind.XmlCommentStartToken)
+                || trivia.IsKind(SyntaxKind.WhitespaceTrivia)
+                || trivia.IsKind(SyntaxKind.EndOfLineTrivia);
         }
     }
 }

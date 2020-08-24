@@ -19,6 +19,9 @@ namespace Comments
             {
             }
         }
+        /// <summary>
+        /// Method summary
+        /// </summary>
         [Group(typeof(GOuter.GInner))] public void Foo() { throw new NotImplementedException(); }
     }
     public class Consumption
