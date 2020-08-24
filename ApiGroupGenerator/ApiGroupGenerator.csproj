@@ -8,6 +8,10 @@
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<RootNamespace>Excubo.Generators.Grouping</RootNamespace>
 	</PropertyGroup>
+	<!--Important: this is only a dev dependency, it won't be recursive-->
+	<PropertyGroup>
+		<DevelopmentDependency>true</DevelopmentDependency>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.7.0" PrivateAssets="all" />
