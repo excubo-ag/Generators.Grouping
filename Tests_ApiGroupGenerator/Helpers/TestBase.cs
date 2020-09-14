@@ -34,8 +34,8 @@ namespace Tests_ApiGroupGenerator.Helpers
                     MetadataReference.CreateFromFile(typeof(ValueTask).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(IAsyncEnumerable<>).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(ConcurrentBag<>).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "netstandard.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll")),
+                    MetadataReference.CreateFromFile(Assembly.Load("netstandard").Location),
+                    MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
                 }),
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
