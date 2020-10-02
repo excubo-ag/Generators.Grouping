@@ -11,13 +11,13 @@ namespace Excubo.Generators.Grouping
     [Generator]
     public partial class GroupingGenerator : ISourceGenerator
     {
-        public void Initialize(InitializationContext context)
+        public void Initialize(GeneratorInitializationContext context)
         {
             // Register a syntax receiver that will be created for each generation pass
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
         }
 
-        public void Execute(SourceGeneratorContext context)
+        public void Execute(GeneratorExecutionContext context)
         {
             context.AddCode("GroupAttribute", AttributeText);
 
@@ -47,12 +47,12 @@ namespace Excubo.Generators.Grouping
             }
         }
 
-        private void GenerateMethod(SourceGeneratorContext context, GroupedMethod method)
+        private void GenerateMethod(GeneratorExecutionContext context, GroupedMethod method)
         {
             context.AddCode($"group_{method.Group.ToDisplayString()}_{method.Symbol.ToDisplayString()}", ProcessMethod(method));
         }
 
-        private static Compilation GetCompilation(SourceGeneratorContext context)
+        private static Compilation GetCompilation(GeneratorExecutionContext context)
         {
             var options = (context.Compilation as CSharpCompilation)!.SyntaxTrees[0].Options as CSharpParseOptions;
             var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(AttributeText, Encoding.UTF8), options));

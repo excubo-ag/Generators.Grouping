@@ -40,15 +40,16 @@ namespace Tests_ApiGroupGenerator.Helpers
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         protected static GeneratorDriver CreateDriver(Compilation compilation, params ISourceGenerator[] generators)
-            => new CSharpGeneratorDriver(compilation.SyntaxTrees.First().Options,
-                ImmutableArray.Create(generators),
-                EmptyAnalyzerConfigOptionsProvider.Instance,
-                ImmutableArray<AdditionalText>.Empty);
+            => CSharpGeneratorDriver.Create(
+                generators: ImmutableArray.Create(generators),
+                additionalTexts: null,
+                parseOptions: compilation.SyntaxTrees.First().Options as CSharpParseOptions,
+                optionsProvider: EmptyAnalyzerConfigOptionsProvider.Instance);
 
         protected Compilation RunGenerator(string source, out ImmutableArray<Diagnostic> diagnostics, out ImmutableArray<(string Filename, string Content)> generatedFiles, params MetadataReference[] metadataReferences)
         {
             var compilation = CreateCompilation(source, metadataReferences);
-            CreateDriver(compilation, new TGenerator()).RunFullGeneration(compilation, out var updatedCompilation, out diagnostics);
+            CreateDriver(compilation, new TGenerator()).RunGeneratorsAndUpdateCompilation(compilation, out var updatedCompilation, out diagnostics);
             var generatedTrees = updatedCompilation.SyntaxTrees.Where(x => !compilation.SyntaxTrees.Any(y => y.Equals(x))).ToImmutableArray();
             foreach (var generated in generatedTrees)
             {
@@ -61,7 +62,7 @@ namespace Tests_ApiGroupGenerator.Helpers
 
         protected static Compilation RunGenerator(Compilation compilation, out ImmutableArray<Diagnostic> diagnostics)
         {
-            CreateDriver(compilation, new TGenerator()).RunFullGeneration(compilation, out var updatedCompilation, out diagnostics);
+            CreateDriver(compilation, new TGenerator()).RunGeneratorsAndUpdateCompilation(compilation, out var updatedCompilation, out diagnostics);
             return updatedCompilation;
         }
 
