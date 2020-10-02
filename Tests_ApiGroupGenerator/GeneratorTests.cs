@@ -1,4 +1,5 @@
 ﻿using Excubo.Generators.Grouping;
+using System.Linq;
 using Tests_ApiGroupGenerator.Helpers;
 using Xunit;
 using Xunit.Abstractions;
@@ -23,9 +24,29 @@ namespace Tests_ApiGroupGenerator
 using System;
 namespace Excubo.Generators.Grouping
 {
+    /// <summary>
+    /// Annotate a method with this attribute to add this method to the specified group.
+    /// <br/>
+    /// To use, you first need to define a struct or interface as follows:
+    /// <br/>
+    ///<example>
+    ///<code>
+    ///public class Foo // this is the class containing the method you're annotating right now!<br/>
+    ///{<br/>
+    ///   public partial struct GGroup // define this struct<br/>
+    ///   {<br/>
+    ///   }<br/>
+    ///   [Group(typeof(GGroup))] // reference the above struct<br/>
+    ///   public void Bar() {} // this is the method you're annotating right now!<br/>
+    ///}<br/>
+    ///</code>
+    ///</example>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
     sealed class GroupAttribute : Attribute
     {
+        /// <param name=""group_type"">The interface or struct that this method should be grouped into</param>
+        /// <param name=""method_name"">Optional method alias. When not null, this string must be a valid C# method identifier and it will be used instead of the methods name within the group</param>
         public GroupAttribute(Type group_type, string? method_name = null)
         {
             GroupType = group_type;
@@ -70,25 +91,7 @@ namespace SimpleGroup
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_SimpleGroup.Container.GGroup.cs", @"
 namespace SimpleGroup
 {
@@ -160,25 +163,7 @@ namespace Params
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(3, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_Params.Container.GGroup.cs", @"
 namespace Params
 {
@@ -246,25 +231,7 @@ namespace Interface
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(7, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_Interface.IContainer.IGGroup.cs", @"
 namespace Interface
 {
@@ -377,25 +344,7 @@ namespace Region
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_Region.Container.GGroup.cs", @"
 namespace Region
 {
@@ -477,25 +426,7 @@ namespace Ambiguity
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(5, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_Ambiguity.Container1.GGroup.cs", @"
 namespace Ambiguity
 {
@@ -584,25 +515,7 @@ namespace GenericContainer
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_GenericContainer.Container_T_.GGroup.cs", @"
 namespace GenericContainer
 {
@@ -676,25 +589,7 @@ namespace FullAttributeName
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_FullAttributeName.Container.GGroup.cs", @"
 namespace FullAttributeName
 {
@@ -767,25 +662,7 @@ namespace FullyQualifiedAttributeName
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_FullyQualifiedAttributeName.Container.GGroup.cs", @"
 namespace FullyQualifiedAttributeName
 {
@@ -860,25 +737,7 @@ namespace MultipleGroups
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(7, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_MultipleGroups.Container.GGroup1.cs", @"
 namespace MultipleGroups
 {
@@ -992,25 +851,7 @@ namespace Renaming
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_Renaming.Container.GGroup.cs", @"
 namespace Renaming
 {
@@ -1087,25 +928,7 @@ namespace Nesting
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(5, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_Nesting.Container.GOuter.cs", @"
 namespace Nesting
 {
@@ -1200,25 +1023,7 @@ namespace NestingOnlyOneMethodInInner
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_NestingOnlyOneMethodInInner.Container.GOuter.cs", @"
 namespace NestingOnlyOneMethodInInner
 {
@@ -1311,25 +1116,7 @@ namespace Comments
             RunGenerator(userSource, out var generatorDiagnostics, out var generated);
             generatorDiagnostics.Verify();
             Assert.Equal(4, generated.Length);
-            generated.ContainsFileWithContent("GroupAttribute.cs", @"
-#nullable enable
-using System;
-namespace Excubo.Generators.Grouping
-{
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    sealed class GroupAttribute : Attribute
-    {
-        public GroupAttribute(Type group_type, string? method_name = null)
-        {
-            GroupType = group_type;
-            MethodName = method_name;
-        }
-        public Type GroupType { get; set; }
-        public string? MethodName { get; set; }
-    }
-}
-#nullable restore
-");
+            Assert.True(generated.Any(g => g.Filename.EndsWith("GroupAttribute.cs")));
             generated.ContainsFileWithContent("group_Comments.Container.GOuter.cs", @"
 namespace Comments
 {

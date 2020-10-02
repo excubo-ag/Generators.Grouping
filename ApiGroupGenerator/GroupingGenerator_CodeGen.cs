@@ -11,9 +11,29 @@ namespace Excubo.Generators.Grouping
 using System;
 namespace Excubo.Generators.Grouping
 {
+    /// <summary>
+    /// Annotate a method with this attribute to add this method to the specified group.
+    /// <br/>
+    /// To use, you first need to define a struct or interface as follows:
+    /// <br/>
+    ///<example>
+    ///<code>
+    ///public class Foo // this is the class containing the method you're annotating right now!<br/>
+    ///{<br/>
+    ///   public partial struct GGroup // define this struct<br/>
+    ///   {<br/>
+    ///   }<br/>
+    ///   [Group(typeof(GGroup))] // reference the above struct<br/>
+    ///   public void Bar() {} // this is the method you're annotating right now!<br/>
+    ///}<br/>
+    ///</code>
+    ///</example>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
     sealed class GroupAttribute : Attribute
     {
+        /// <param name=""group_type"">The interface or struct that this method should be grouped into</param>
+        /// <param name=""method_name"">Optional method alias. When not null, this string must be a valid C# method identifier and it will be used instead of the methods name within the group</param>
         public GroupAttribute(Type group_type, string? method_name = null)
         {
             GroupType = group_type;
