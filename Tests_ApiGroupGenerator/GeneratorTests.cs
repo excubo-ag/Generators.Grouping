@@ -64,7 +64,7 @@ namespace Excubo.Generators.Grouping
         [Fact]
         public void SimpleGroup()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -141,7 +141,7 @@ namespace SimpleGroup
         [Fact]
         public void Params()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -202,7 +202,7 @@ namespace Params
         [Fact]
         public void Interface()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -328,7 +328,7 @@ namespace Interface
         [Fact]
         public void Region()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -405,7 +405,7 @@ namespace Region
         [Fact]
         public void Ambiguity()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -505,7 +505,7 @@ namespace Ambiguity
         [Fact]
         public void GenericContainer()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -583,7 +583,7 @@ namespace GenericContainer
         [Fact]
         public void FullAttributeName()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -660,7 +660,7 @@ namespace FullAttributeName
         [Fact]
         public void FullyQualifiedAttributeName()
         {
-            var userSource =@"
+            var userSource = @"
 using System;
 
 namespace FullyQualifiedAttributeName
@@ -736,7 +736,7 @@ namespace FullyQualifiedAttributeName
         [Fact]
         public void MultipleGroups()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -857,7 +857,7 @@ namespace MultipleGroups
         [Fact]
         public void Renaming()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -934,7 +934,7 @@ namespace Renaming
         [Fact]
         public void Nesting()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -1035,7 +1035,7 @@ namespace Nesting
         [Fact]
         public void NestingOnlyOneMethodInInner()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
@@ -1120,7 +1120,7 @@ namespace NestingOnlyOneMethodInInner
         [Fact]
         public void Comments()
         {
-            var userSource =@"
+            var userSource = @"
 using Excubo.Generators.Grouping;
 using System;
 
