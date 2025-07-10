@@ -3,30 +3,21 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Excubo.Generators.Grouping
 {
     [Generator]
-    public partial class GroupingGenerator : ISourceGenerator
+    public partial class GroupingGenerator : IIncrementalGenerator
     {
-        public void Initialize(GeneratorInitializationContext context)
-        {
-            // Register a syntax receiver that will be created for each generation pass
-            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
-        }
-
-        public void Execute(GeneratorExecutionContext context)
+        public static void Execute(Compilation compilation, ImmutableArray<MethodDeclarationSyntax> methods, SourceProductionContext context)
         {
             context.AddCode("GroupAttribute", AttributeText);
 
-            if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
-            {
-                return;
-            }
-
-            var candidate_methods = GetCandidateMethods(receiver, GetCompilation(context));
+            var candidate_methods = GetCandidateMethods(methods, compilation);
 
             var target_methods = candidate_methods
                 .SelectMany(WithAnnotations)                  // unroll methods with multiple group attributes into one long list
@@ -47,16 +38,9 @@ namespace Excubo.Generators.Grouping
             }
         }
 
-        private void GenerateMethod(GeneratorExecutionContext context, GroupedMethod method)
+        private static void GenerateMethod(SourceProductionContext context, GroupedMethod method)
         {
             context.AddCode($"group_{method.Group.ToDisplayString()}_{method.Symbol.ToDisplayString()}", ProcessMethod(method));
-        }
-
-        private static Compilation GetCompilation(GeneratorExecutionContext context)
-        {
-            var options = (context.Compilation as CSharpCompilation)!.SyntaxTrees[0].Options as CSharpParseOptions;
-            var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(AttributeText, Encoding.UTF8), options));
-            return compilation;
         }
 
         /// <summary>
@@ -65,12 +49,10 @@ namespace Excubo.Generators.Grouping
         /// <param name="receiver"></param>
         /// <param name="compilation"></param>
         /// <returns></returns>
-        private static IEnumerable<Method> GetCandidateMethods(SyntaxReceiver receiver, Compilation compilation)
+        private static IEnumerable<Method> GetCandidateMethods(ImmutableArray<MethodDeclarationSyntax> methods, Compilation compilation)
         {
-            var attributeSymbol = compilation.GetTypeByMetadataName("Excubo.Generators.Grouping.GroupAttribute");
-
             // loop over the candidate methods, and keep the ones that are actually annotated
-            foreach (var method_declaration in receiver.CandidateMethods)
+            foreach (var method_declaration in methods)
             {
                 var model = compilation.GetSemanticModel(method_declaration.SyntaxTree);
                 var method_symbol = model.GetDeclaredSymbol(method_declaration);
@@ -78,7 +60,7 @@ namespace Excubo.Generators.Grouping
                 {
                     continue;
                 }
-                if (method_symbol.GetAttributes().Any(ad => ad.AttributeClass != null && ad.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default)))
+                if (method_symbol.GetAttributes().Any(ad => ad.AttributeClass != null && (ad.AttributeClass.Name == "Group" || ad.AttributeClass.Name == "GroupAttribute")))
                 {
                     yield return new Method(method_symbol, method_declaration, model);
                 }
@@ -175,25 +157,15 @@ namespace Excubo.Generators.Grouping
             var type_symbol = model.GetSymbolInfo(type_arg_param);
             return type_symbol;
         }
-
-        /// <summary>
-        /// Created on demand before each generation pass
-        /// </summary>
-        internal class SyntaxReceiver : ISyntaxReceiver
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            public List<MethodDeclarationSyntax> CandidateMethods { get; } = new List<MethodDeclarationSyntax>();
-
-            /// <summary>
-            /// Called for every syntax node in the compilation, we can inspect the nodes and save any information useful for generation
-            /// </summary>
-            public void OnVisitSyntaxNode(SyntaxNode syntax_node)
-            {
-                // any method with at least one attribute is a candidate for property generation
-                if (syntax_node is MethodDeclarationSyntax memberDeclarationSyntax && memberDeclarationSyntax.AttributeLists.Count > 0)
-                {
-                    CandidateMethods.Add(memberDeclarationSyntax);
-                }
-            }
+            // Register a syntax receiver that will be created for each generation pass
+            IncrementalValuesProvider<MethodDeclarationSyntax> methods = context.SyntaxProvider.CreateSyntaxProvider(
+                predicate: static (syntax_node, _) => syntax_node is MethodDeclarationSyntax memberDeclarationSyntax && memberDeclarationSyntax.AttributeLists.Count > 0,
+                transform: static (context, _) => context.Node as MethodDeclarationSyntax)
+                .Where(static m => m is not null)!;
+            IncrementalValueProvider<(Compilation, ImmutableArray<MethodDeclarationSyntax>)> compilationAndMethods = context.CompilationProvider.Combine(methods.Collect());
+            context.RegisterSourceOutput(compilationAndMethods, static (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
     }
 }

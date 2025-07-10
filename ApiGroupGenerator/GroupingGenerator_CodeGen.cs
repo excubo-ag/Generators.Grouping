@@ -60,7 +60,7 @@ namespace Excubo.Generators.Grouping
         /// </summary>
         /// <param name="method">The method to mirror in the group</param>
         /// <returns></returns>
-        private string ProcessMethod(GroupedMethod method)
+        private static string ProcessMethod(GroupedMethod method)
         {
             var comments_on_method = string.Join("", method.Symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLeadingTrivia().Where(t => IsCommentOrWhitespaceKind(t)).Select(t => t.ToFullString()));
             var returnType = method.Symbol.ReturnType.ToDisplayString();
